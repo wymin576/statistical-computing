@@ -305,5 +305,33 @@ var(MC.Phi(antithetic = TRUE))
 var(MC.Phi(antithetic = F))
 
 # 6.9
+rm(list = ls())
+Rayleigh <- function(x, m = 10000, antithetic=TRUE){
+  u <- runif(m/2)
+  if (!antithetic)
+    v <- runif(m/2)
+  else
+    v <- 1 - u
+  u <- c(u,v)
+  #calculate inv-cdf and varianace
+  invcdf <- x * sqrt(-2 * log(u))
+  invcdf
+}
+
+set.seed(123)
+X1 <- Rayleigh(1.95, antithetic=FALSE)
+set.seed(123)
+X2 <- Rayleigh(1.95, antithetic=TRUE)
+
+set.seed(321)
+X1prime <- Rayleigh(1.95, antithetic=FALSE)
+
+var(X1);var(X1prime);var(X2)
+
+result1 <- (var(X1) - var(X2))/var(X1)
+result2 <- (var(X1) - var(X1prime))/var(X1)
 
 
+rev1 <- var(X1)/2 + var(X2)/2 + cov(X1, X2)
+rev2 <- var(X1)/2 + var(X1prime)/2 + cov(X1, X1prime)
+result3 <- (rev1 - rev2)/rev1 * 100
