@@ -322,6 +322,8 @@ set.seed(123)
 X1 <- Rayleigh(1.95, antithetic=FALSE)
 set.seed(123)
 X2 <- Rayleigh(1.95, antithetic=TRUE)
+plot(density(X2))
+lines(density(VGAM::rrayleigh(10^4,scale = 1.95)))
 
 set.seed(321)
 X1prime <- Rayleigh(1.95, antithetic=FALSE)
