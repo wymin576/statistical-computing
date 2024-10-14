@@ -198,3 +198,112 @@ for ( i in 1:d) {
   }
 }
 m2
+
+
+# Chapter 6
+# 6.1
+n <- 10^4
+x <- runif(n,min = 0,max = pi/3)
+theta_hat <- mean(sin(x))*pi/3
+print(theta_hat)
+print(cos(0)-cos(pi/3))
+
+# 6.2
+x <- seq(.1,2.5,length = 10)
+m <- 10^4
+u <- runif(m)
+cdf <- numeric(length(x))
+for (i in 1:length(x)){
+  cdf[i] <-  mean(x[i]*exp(-(u*x[i])^2/2))/sqrt(2*pi)
+  
+}
+phi <- pnorm(x)-pnorm(0)
+print(round(rbind(x,cdf,phi),3))
+
+x <- 2;m <- 10^4;z <- rnorm(m)
+g <- (z < x); v <- mean((g - mean(z))^2)/m
+cdf <- mean(g)
+v;c(cdf - 1.96*sqrt(v),cdf + 1.96*sqrt(v))
+
+# 6.3
+set.seed(123)
+rm(list = ls())
+n <- 10^4;x <- runif(n,min = 0, max = 0.5)
+
+theta.hat <- mean(exp(-x))/2
+
+print(theta.hat);print(1- exp(-0.5))
+
+b  <-  1/2;a  <-  0
+var_g <- mean((exp(-x) - mean(exp(-x)))^2)
+v <- var_g*(b - a)^2/n
+v
+# exponential
+set.seed(123)
+rm(list = ls())
+n <- 10^4;x <- rexp(n)
+
+theta.hat <- mean(exp(-x))/2
+
+print(theta.hat);print(1- exp(-0.5))
+
+b  <-  1/2;a  <-  0
+var_g <- mean((exp(-x) - mean(exp(-x)))^2)
+v <- var_g*(b - a)^2/n
+v
+
+# 6.4
+rm(list = ls())
+set.seed(123)
+
+x <- c(1:9)/10
+m <- 10^4
+u <- runif(m)
+cdf <- numeric(length(x))
+for (i in 1:length(x)){
+  g <- u^2*x[i]^3*(1 - u*x[i])^2
+  cdf[i] <- gamma(6)*mean(g)/gamma(3)^2
+}
+phi <- pbeta(x,3,3)
+print(round(rbind(x,cdf,phi),3))
+
+# 6.5 
+
+rm(list = ls())
+set.seed(123)
+
+x <- 2;m <- 10^4;z <- rnorm(m);g <- (z < x)
+v <- mean((g-mean(g))^2)/m;v
+
+g1 <- mean(z < x)
+v1 <- g1*(1-g1)/m;
+v;v1
+
+# 6.6
+rm(list = ls())
+set.seed(123)
+m <- 10^4
+u <- runif(m)
+cov(exp(u),exp(1-u))
+var(exp(u));var(exp(1-u));var(exp(u) + exp(1-u))
+
+# simple MC
+x <- numeric()
+MC.Phi <- function(antithetic = TRUE) {
+  for (i in 1:10^3) {
+    u <- runif(20)
+    if (!antithetic) v <- runif(20) else
+      v <- 1 - u
+    u <- c(u, v)
+    g <- exp(u)
+    x[i] <- mean(g) 
+  }
+  x
+}
+
+var(MC.Phi(antithetic = TRUE))
+var(MC.Phi(antithetic = F))
+
+# 6.9
+
+
