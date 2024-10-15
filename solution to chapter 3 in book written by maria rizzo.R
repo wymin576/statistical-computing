@@ -287,22 +287,28 @@ u <- runif(m)
 cov(exp(u),exp(1-u))
 var(exp(u));var(exp(1-u));var(exp(u) + exp(1-u))
 
-# simple MC
+# simple MC vs antithetic variates
 x <- numeric()
-MC.Phi <- function(antithetic = TRUE) {
-  for (i in 1:10^3) {
-    u <- runif(20)
-    if (!antithetic) v <- runif(20) else
+MC.Phi <- function(R = 10^4, antithetic = TRUE) {
+    u <- runif(R/2)
+    if (!antithetic) v <- runif(R/2) else
       v <- 1 - u
     u <- c(u, v)
     g <- exp(u)
-    x[i] <- mean(g) 
-  }
-  x
+    x <- mean(g) 
+  return(x)
+}
+m <- 10^3
+MC1 <- MC2 <- numeric(m)
+
+for (i in 1:m){
+  MC1[i] <- MC.Phi(R = 10^3,antithetic = F)
+  MC2[i] <- MC.Phi(R = 10^3,antithetic = T)
 }
 
-var(MC.Phi(antithetic = TRUE))
-var(MC.Phi(antithetic = F))
+var(MC1)
+var(MC2)
+(1-var(MC2)/var(MC1))*100  #reduction in variance
 
 # 6.9
 rm(list = ls())
@@ -320,20 +326,16 @@ Rayleigh <- function(x, m = 10000, antithetic=TRUE){
 
 set.seed(123)
 X1 <- Rayleigh(1.95, antithetic=FALSE)
-set.seed(123)
 X2 <- Rayleigh(1.95, antithetic=TRUE)
-plot(density(X2))
-lines(density(VGAM::rrayleigh(10^4,scale = 1.95)))
-
+var(X1);var(X2)
+# plot(density(X2))
+# lines(density(VGAM::rrayleigh(10^4,scale = 1.95)))
 set.seed(321)
 X1prime <- Rayleigh(1.95, antithetic=FALSE)
+X2prime <- Rayleigh(1.95, antithetic=T)
+var(X1prime);var(X2prime)
 
-var(X1);var(X1prime);var(X2)
+(var(X1) - var(X2))/var(X1)
+(var(X1prime) - var(X2prime))/var(X1prime)
 
-result1 <- (var(X1) - var(X2))/var(X1)
-result2 <- (var(X1) - var(X1prime))/var(X1)
-
-
-rev1 <- var(X1)/2 + var(X2)/2 + cov(X1, X2)
-rev2 <- var(X1)/2 + var(X1prime)/2 + cov(X1, X1prime)
-result3 <- (rev1 - rev2)/rev1 * 100
+# 6.10
