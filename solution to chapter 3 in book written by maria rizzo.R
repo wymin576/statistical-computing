@@ -1,4 +1,5 @@
-# stat computing
+# stat computing123
+
 # 3.2 laplace distribution
 # acceptance-rejection method
 # f(x) = exp(-|x|)/2
