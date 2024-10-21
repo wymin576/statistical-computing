@@ -339,3 +339,4 @@ var(X1prime);var(X2prime)
 (var(X1prime) - var(X2prime))/var(X1prime)
 
 # 6.10
+my github is ok
