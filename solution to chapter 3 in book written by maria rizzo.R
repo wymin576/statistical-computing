@@ -341,4 +341,109 @@ var(X1prime);var(X2prime)
 (var(X1prime) - var(X2prime))/var(X1prime)
 
 # 6.10
-my github is ok
+# 7.1 Estimate the MSE of the level k trimmed means for random samples
+# of size 20 generated from a standard Cauchy distribution. 
+# (The target parameter θ is the center or median; the expected value does not exist.)
+# Summarize the estimates of MSE in a table for k = 1,2,...,9.
+
+n <- 20
+m <- 1000
+tmean <- numeric(m)
+for (i in 1:m) {
+  x <- sort(rcauchy(n))
+  tmean[i] <- median(x[2:(n-1)]) # the estimate of theta is median, not mean
+}
+mse <- mean(tmean^2)
+sqrt(sum((tmean- mean(tmean))^2)) / m
+
+rm(list = ls())
+n <- 20;K <- n/2- 1;m <- 1000
+mse <- matrix(0, n/2, 2)
+
+trimmed.mse <- function(n, m, k) {
+  tmedian <- numeric(m)
+  for (i in 1:m) {
+    x <- sort(rcauchy(n))
+    tmedian[i] <- median(x[(k+1):(n-k)]) 
+  }
+  mse.est <- mean(tmedian^2)
+  se.mse <- sqrt(mean((tmedian-mean(tmedian))^2)) / sqrt(m)
+  return(c(mse.est, se.mse))
+}
+for (k in 0:K) {
+  mse[k+1, 1:2] <- trimmed.mse(n=n, m=m, k=k)
+  }
+mse
+
+
+# 7.2 Plot the empirical power curve for the t-test in Example 7.9, changing
+# the alternative hypothesis to H1 : µ /= 500, and keeping the significance
+# level α = 0.05.
+rm(list = ls())
+n <- 20;m <- 1000
+mu0 <- 500;sigma <- 100
+
+mu <- c(seq(450, 650, 10)) #alternatives
+M <- length(mu)
+power <- numeric(M)
+for (i in 1:M) {
+  mu1 <- mu[i]
+  pvalues <- replicate(m, expr = {
+    #simulate under alternative mu1
+    x <- rnorm(n, mean = mu1, sd = sigma)
+    ttest <- t.test(x,
+                    alternative = "two.sided", mu = mu0)
+    ttest$p.value } )
+  power[i] <- mean(pvalues <= .05)
+}
+se <- sqrt(power * (1-power) / m)
+
+library(ggplot2)
+df <- data.frame(mean=mu, power=power,
+                 upper=power+2*se, lower=power-2*se)
+ggplot(df, aes(x=mean, y=power)) +
+  geom_line() +
+  geom_vline(xintercept=500, lty=2) +
+  geom_hline(yintercept=c(0,.05), lty=1:2) +
+  geom_errorbar(aes(ymin=lower, ymax=upper), width = 0.2, lwd=1.5)
+
+
+# 7.3 Plot the power curves for the t-test in Example 7.9 for sample sizes 10,
+# 20, 30, 40, and 50, but omit the standard error bars. Plot the curves
+# on the same graph, each in a different color or different line type, and
+# include a legend. Comment on the relation between power and sample
+# size.
+rm(list = ls())
+m <- 1000
+mu0 <- 500;sigma <- 100
+
+mu <- c(seq(450, 650, 10)) #alternatives
+M <- length(mu)
+
+power <- numeric(M);se <- numeric(M);
+myfunc <- function(n) {
+for (i in 1:M) {
+  mu1 <- mu[i]
+  pvalues <- replicate(m, expr = {
+    #simulate under alternative mu1
+    x <- rnorm(n, mean = mu1, sd = sigma)
+    ttest <- t.test(x,
+                    alternative = "two.sided", mu = mu0)
+    ttest$p.value } )
+  power[i] <- mean(pvalues <= .05)
+    }
+return(power)
+}
+
+plot(mu,myfunc(10),type = 'l',col = 1)
+lines(mu,myfunc(20),type = 'l' ,col = 2)
+lines(mu,myfunc(30),type = 'l',col = 3)
+lines(mu,myfunc(40),type = 'l',col = 4)
+lines(mu,myfunc(50),type = 'l',col = 5)
+
+# 7.4 Suppose that X1,...,Xn are a random sample from a lognormal distri
+# bution. Construct a 95% confidence interval for the parameter µ. Use a
+# Monte Carlo method to obtain an empirical estimate of the confidence
+# level when data is generated from standard lognormal.
+
+
