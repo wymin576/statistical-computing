@@ -441,6 +441,136 @@ lines(mu,myfunc(30),type = 'l',col = 3)
 lines(mu,myfunc(40),type = 'l',col = 4)
 lines(mu,myfunc(50),type = 'l',col = 5)
 
+
+
+# 7.6:Suppose a 95% symmetric t-interval is applied to estimate a mean,
+# but the sample data are non-normal. Then the probability that the
+# confidence interval covers the mean is not necessarily equal to 0.95. Use
+# a Monte Carlo experiment to estimate the coverage probability of the
+# t-interval for random samples of χ2(2) data with sample size n = 20.
+# Compare your t-interval results with the simulation results in Example
+# 7.4. (The t-interval should be more robust to departures from normality
+#       than the interval for variance.)
+
+alpha = 0.05
+n = 20
+m = 1000
+
+UCL = numeric(m)
+LCL = numeric(m)
+
+for(i in 1:m)
+{
+  x = rchisq(n, 2) # compare with x = rnorm(n) + 2
+  LCL[i] = mean(x) - qt(alpha / 2, df=n-1, lower.tail = FALSE)*sd(x)/sqrt(n)
+  UCL[i] = mean(x) + qt(alpha / 2, df=n-1, lower.tail = FALSE)*sd(x)/sqrt(n)
+}
+
+mean(LCL < 2 & UCL > 2)
+
+
+
+# 7.7:Estimate the 0.025, 0.05, 0.95, and 0.975 quantiles of the skewness
+# √b1 under normality by a Monte Carlo experiment. 
+# Compute the standard error of the estimates from (2.14) 
+# using the normal approximation for the density (with exact variance formula). 
+# Compare the estimated quantiles with the quantiles of the large sample approximation
+# √b1 ≈ N(0, 6/n).
+
+rm(list = ls())
+sk <- function(x) {
+  #computes the sample skewness coeff.
+  xbar <- mean(x)
+  m3 <- mean((x - xbar)^3)
+  m2 <- mean((x - xbar)^2)
+  return( m3 / m2^1.5 )
+}
+
+n <- 20;m <- 1000
+y <- numeric(m)
+for (i in 1:m) {
+  x <- rnorm(n)
+  y[i] <- sk(x)
+}
+
+quantile(y,probs = c(.025,.05,.95,.975))
+qnorm(c(.025,.05,.95,.975),mean = 0, sd = sqrt(6*(n-2)/((n+1)*(n+3))))
+qnorm(c(.025,.05,.95,.975),mean = 0, sd = sqrt(6/n))
+
+
+
+# 7.8：Estimate the power of the skewness test of normality against 
+# symmetric Beta(α, α) distributions and comment on the results. 
+# Are the results different for heavy-tailed symmetric alternatives such as t(ν)?
+
+alpha <- .1
+n <- 30
+m <- 2500
+
+#critical value for the skewness test
+cv <- qnorm(1-alpha/2, 0, sqrt(6*(n-2) / ((n+1)*(n+3))))
+
+sk <- function(x) {
+  #computes the sample skewness coeff.
+  xbar <- mean(x)
+  m3 <- mean((x - xbar)^3)
+  m2 <- mean((x - xbar)^2)
+  return( m3 / m2^1.5 )
+}
+
+mean(replicate(m, expr = {
+  #simulate under alternative mu1
+  x <- rnorm(n, mean = 0, sd = 1)
+  as.integer(abs(sk(x)) >= cv)} ))
+
+mean(replicate(m, expr = {
+  #simulate under alternative mu1
+  x <- rbeta(n, 0.5, 0.5)
+  as.integer(abs(sk(x)) >= cv)} ))
+
+mean(replicate(m, expr = {
+  #simulate under alternative mu1
+  x <- rt(n, 10)
+  as.integer(abs(sk(x)) >= cv)} ))
+
+
+# 7.9
+# Refer to Example 7.16. Repeat the simulation, but also compute the
+# F test of equal variance, at significance level αˆ = 0.055. Compare the
+# power of the Count Five test and F test for small, medium, and large sample sizes. 
+# (Recall that the F test is not applicable for non-normal distributions.)
+
+# generate samples under H1 to estimate power
+rm(list = ls())
+count5test <- function(x, y) {
+  X <- x - mean(x)
+  Y <- y - mean(y)
+  outx <- sum(X > max(Y)) + sum(X < min(Y))
+  outy <- sum(Y > max(X)) + sum(Y < min(X))
+  # return 1 (reject) or 0 (do not reject H0)
+  return(as.integer(max(c(outx, outy)) > 5))
+}
+sigma1 <- 1
+sigma2 <- 1.5
+m <- 1000;n <- c(1,10,100)*20
+myfunc <- function(i){
+print(c(mean(replicate(m, expr={
+  x <- rnorm(n[i], 0, sigma1)
+  y <- rnorm(n[i], 0, sigma2)
+  count5test(x, y)
+})),
+mean(replicate(m, expr={
+  x <- rnorm(n[i], 0, sigma1)
+  y <- rnorm(n[i], 0, sigma2)
+  var.test(x, y,conf.level = 1- 0.055)$p.value
+}))))
+}
+options(digits = 3)
+myfunc(1)
+myfunc(2)
+myfunc(3)
+
+
 # 7.4 Suppose that X1,...,Xn are a random sample from a lognormal distri
 # bution. Construct a 95% confidence interval for the parameter µ. Use a
 # Monte Carlo method to obtain an empirical estimate of the confidence
