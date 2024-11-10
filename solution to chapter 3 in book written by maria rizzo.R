@@ -441,6 +441,28 @@ lines(mu,myfunc(30),type = 'l',col = 3)
 lines(mu,myfunc(40),type = 'l',col = 4)
 lines(mu,myfunc(50),type = 'l',col = 5)
 
+        
+# 7.4 Suppose that X1,...,Xn are a random sample from a lognormal distri
+# bution. Construct a 95% confidence interval for the parameter µ. Use a
+# Monte Carlo method to obtain an empirical estimate of the confidence
+# level when data is generated from standard lognormal.
+
+rm(list = ls())
+n <- 20; m <- 1000
+alpha <- .05
+
+UCL = numeric(m)
+LCL = numeric(m)
+for(i in 1:m){
+  x <- log(rlnorm(n, meanlog = 0, sdlog = 1))
+  cv <- qnorm(1-alpha/2)
+  LCL[i] <- mean(x) - cv/sqrt(n)
+  UCL[i] <- mean(x) + cv/sqrt(n)
+}
+sum(LCL < 0 & UCL > 0)
+mean(LCL < 0 & UCL > 0)
+
+        
 
 
 # 7.6:Suppose a 95% symmetric t-interval is applied to estimate a mean,
@@ -571,9 +593,5 @@ myfunc(2)
 myfunc(3)
 
 
-# 7.4 Suppose that X1,...,Xn are a random sample from a lognormal distri
-# bution. Construct a 95% confidence interval for the parameter µ. Use a
-# Monte Carlo method to obtain an empirical estimate of the confidence
-# level when data is generated from standard lognormal.
 
 
