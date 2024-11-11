@@ -620,6 +620,77 @@ myfunc(1)
 myfunc(2)
 myfunc(3)
 
+        
+# 7.10
+n <- 1000
+y <- replicate(1000,expr = {
+x <- sort(rlnorm(n,meanlog = 0,sdlog = 1))
+mu <- mean(x)
+sum((2*(1:n) -n -1)*x)/(n^2*mu)
+})
+
+mean(y);median(y);quantile(y,probs = (1:10)/10)
+
+# 7.11
+rm(list = ls())
+n <- 20;alpha <- .05
+
+p_chisq <- replicate(1000,expr = {
+  x <- rchisq(n, df = 1)
+  t.test(x, alternative = "two.sided", mu = 1)$p.value
+})
+p_unif <- replicate(1000,expr = {
+  x <- runif(n, min = 0,max = 2)
+  t.test(x, alternative = "two.sided", mu = 1)$p.value
+})
+p_exp <- replicate(1000,expr = {
+  x <- runif(n, min = 0,max = 2)
+  t.test(x, alternative = "two.sided", mu = 1)$p.value
+})
+
+mean(p_chisq < alpha);mean(p_unif < alpha);mean(p_exp < alpha)
+
+# 7.12
+# two vars are independent
+alpha <- .05
+cor_pearson <- replicate(1000,expr = {
+  x <- MASS::mvrnorm(n, mu = c(0,0),Sigma = diag(c(1,1)) )
+  cor.test(x[,1],x[,2],method = "pearson")$p.value
+  })
+
+cor_kendall <- replicate(1000,expr = {
+  x <- MASS::mvrnorm(n, mu = c(0,0),Sigma = diag(c(1,1)) )
+  cor.test(x[,1],x[,2],method = "kendall")$p.value
+})
+
+cor_spearman <- replicate(1000,expr = {
+  x <- MASS::mvrnorm(n, mu = c(0,0),Sigma = diag(c(1,1)) )
+  cor.test(x[,1],x[,2],method = "spearman")$p.value
+})
+
+mean(cor_pearson < alpha);
+mean(cor_kendall < alpha);
+mean(cor_spearman < alpha)
+# two vars are dependent
+sigma <- matrix(c(1,0.5,0.5,1),nrow = 2)
+cor_pearson2 <- replicate(1000,expr = {
+  x <- MASS::mvrnorm(n, mu = c(0,0),Sigma = sigma )
+  cor.test(x[,1],x[,2],method = "pearson")$p.value
+})
+
+cor_kendall2 <- replicate(1000,expr = {
+  x <- MASS::mvrnorm(n, mu = c(0,0),Sigma = sigma )
+  cor.test(x[,1],x[,2],method = "kendall")$p.value
+})
+
+cor_spearman2 <- replicate(1000,expr = {
+  x <- MASS::mvrnorm(n, mu = c(0,0),Sigma = sigma )
+  cor.test(x[,1],x[,2],method = "spearman")$p.value
+})
+
+mean(cor_pearson2 < alpha);
+mean(cor_kendall2 < alpha);
+mean(cor_spearman2 < alpha)
 
 
 
