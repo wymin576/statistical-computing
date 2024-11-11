@@ -463,6 +463,34 @@ sum(LCL < 0 & UCL > 0)
 mean(LCL < 0 & UCL > 0)
 
         
+# 7.5  Suppose that X1, . . . , Xn are a random sample from a lognormal distribution. 
+# Construct a 95% confidence interval for the parameter µ.
+# Use a Monte Carlo method to obtain an empirical estimate of the confidence level when data is generated from standard lognormal.
+rm(list = ls());library(purrr)
+
+wei_runs <- replicate(1000, {
+  x <- rbinom(1000, size = 1, prob = .5)
+  r <- rle(x)
+  mytab <- table(r$lengths)
+  len <- length(mytab)
+  runs <- max(r$lengths)
+  w <- as.numeric(mytab[len])
+  return(c(runs,w))
+}
+)
+
+# the probability that the observed maximum run length in [9, 11]
+mytab <- table(wei_runs[1,])
+mydf <- data.frame(x =  as.numeric(dimnames(mytab)[[1]]),
+                      y = as.numeric(mytab)) 
+sum(mydf$y[dplyr::between(mydf$x,9,11)]/sum(mydf$y))
+
+(theta <- sum(wei_runs[1,]*wei_runs[2,])/sum(wei_runs[2,]))
+
+sd <- sqrt(mean((wei_runs[1,]-theta)^2*wei_runs[2,]))
+
+c(theta - 1.96*sd, theta + 1.96*sd)」
+
 
 
 # 7.6:Suppose a 95% symmetric t-interval is applied to estimate a mean,
