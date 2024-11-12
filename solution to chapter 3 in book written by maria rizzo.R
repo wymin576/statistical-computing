@@ -628,8 +628,27 @@ x <- sort(rlnorm(n,meanlog = 0,sdlog = 1))
 mu <- mean(x)
 sum((2*(1:n) -n -1)*x)/(n^2*mu)
 })
-
+plot(density(y))
 mean(y);median(y);quantile(y,probs = (1:10)/10)
+
+
+
+y_unif <- replicate(1000,expr = {
+  x <- sort(runif(n))
+  mu <- mean(x)
+  sum((2*(1:n) -n -1)*x)/(n^2*mu)
+})
+
+plot(density(y_unif))
+
+
+y_binom <- replicate(1000,expr = {
+  x <- sort(rbinom(n,size = 1,prob = 0.1))
+  mu <- mean(x)
+  sum((2*(1:n) -n -1)*x)/(n^2*mu)
+})
+
+plot(density(y_binom))
 
 # 7.11
 rm(list = ls())
