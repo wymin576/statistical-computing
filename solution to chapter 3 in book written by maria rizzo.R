@@ -711,5 +711,96 @@ mean(cor_pearson2 < alpha);
 mean(cor_kendall2 < alpha);
 mean(cor_spearman2 < alpha)
 
+#8.1 Compute a jackknife estimate of the bias and the standard error of the
+# correlation statistic in Example 8.2.
+library(bootstrap)
+
+data(law, package = "bootstrap")
+n <- nrow(law)
+y <- law$LSAT
+z <- law$GPA
+theta.hat <- cor(y,z)
+print (theta.hat)
+#compute the jackknife replicates, leave-one-out estimates
+theta.jack <- numeric(n)
+for (i in 1:n)
+  theta.jack[i] <- cor(y[-i],z[-i])
+bias <- (n - 1) * (mean(theta.jack) - theta.hat)
+print(bias) 
+
+
+se <- sqrt((n-1) *
+             mean((theta.jack - mean(theta.jack))^2))
+print(se)
+
+# 
+# 8.3 Obtain a bootstrap t confidence interval estimate for the correlation
+# statistic in Example 8.2 (law data in bootstrap).
+
+boot.t.ci <-
+  function(x, B = 500, R = 100, level = .95, statistic){
+    #compute the bootstrap t CI
+    x <- as.matrix(x); n <- nrow(x)
+    stat <- numeric(B); se <- numeric(B)
+    boot.se <- function(x, R, f) {
+      #local function to compute the bootstrap
+      #estimate of standard error for statistic f(x)
+      x <- as.matrix(x); m <- nrow(x)
+      th <- replicate(R, expr = {
+        i <- sample(1:m, size = m, replace = TRUE)
+        f(x[i, ])
+      })
+      return(sd(th))
+    }
+    for (b in 1:B) {
+      j <- sample(1:n, size = n, replace = TRUE)
+      y <- x[j, ]
+      stat[b] <- statistic(y)
+      se[b] <- boot.se(y, R = R, f = statistic)
+    }
+    stat0 <- statistic(x)
+    t.stats <- (stat - stat0) / se
+    se0 <- sd(stat)
+    alpha <- 1 - level
+    Qt <- quantile(t.stats, c(alpha/2, 1-alpha/2), type = 1)
+    names(Qt) <- rev(names(Qt))
+    CI <- rev(stat0 - Qt * se0)
+  }
+
+dat <- cbind(law$LSAT, law$GPA)
+stat <- function(dat) {
+  cor(dat[, 1],dat[, 2]) }
+ci <- boot.t.ci(dat, statistic = stat, B=2000, R=200)
+print(ci)
+
+# 8.4 Refer to the air-conditioning data set aircondit provided in the boot package. 
+# The 12 observations are the times in hours between failures of
+# air-conditioning equipment [68, Example 1.1]:
+#   3, 5, 7, 18, 43, 85, 91, 98, 100, 130, 230, 487.
+# Assume that the times between failures follow an exponential model Exp(λ). Obtain the MLE of the hazard rate λ 
+# and use bootstrap to estimate the bias 
+# and standard error of the estimate.
+time <- c(3, 5, 7, 18, 43, 85, 91, 98, 100, 130, 230, 487)
+theta.hat <- 1/mean(time)
+
+#bootstrap estimate of bias
+B <- 2000 #larger for estimating bias
+n <- length(time)
+theta.b <- numeric(B)
+for (b in 1:B) {
+  i <- sample(1:n, size = n, replace = TRUE)
+  LSAT <- time[i]
+  theta.b[b] <- 1/mean(LSAT)
+}
+bias <- mean(theta.b - theta.hat)
+bias
+
+se.r <- sd(theta.b)
+se.r
+# 8.5 Refer to Exercise 8.4. Compute 95% bootstrap confidence intervals for
+# the mean time between failures 1/λ by the standard normal, basic,
+# percentile, and BCa methods. Compare the intervals and explain why
+# they may differ.
+
 
 
