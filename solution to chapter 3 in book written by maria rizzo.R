@@ -711,37 +711,42 @@ mean(cor_pearson2 < alpha);
 mean(cor_kendall2 < alpha);
 mean(cor_spearman2 < alpha)
 
-#8.1 Compute a jackknife estimate of the bias and the standard error of the
-# correlation statistic in Example 8.2.
-library(bootstrap)
-
-data(law, package = "bootstrap")
-n <- nrow(law)
-y <- law$LSAT
-z <- law$GPA
+# 8.1 Compute a jackknife estimate of the bias and the standard error of the
+# # correlation statistic in Example 8.2.
+rm(list = ls())
+# set.seed(123)
+myfunc <- function(n,y,z){
+  #compute the jackknife replicates, leave-one-out estimates
+  theta.jack <- numeric(n)
+  for (i in 1:n) theta.jack[i] <- cor(y[-i],z[-i])
+  bias <- (n - 1) * (mean(theta.jack) - theta.hat)
+  se <- sqrt((n-1) * mean((theta.jack - mean(theta.jack))^2))
+  return(c(bias,se))
+}
+data(patch, package = "bootstrap")
+n <- nrow(patch)
+y <- patch$y
+z <- patch$z
 theta.hat <- cor(y,z)
-print (theta.hat)
-#compute the jackknife replicates, leave-one-out estimates
-theta.jack <- numeric(n)
-for (i in 1:n)
-  theta.jack[i] <- cor(y[-i],z[-i])
-bias <- (n - 1) * (mean(theta.jack) - theta.hat)
-print(bias) 
 
-
-se <- sqrt((n-1) *
-             mean((theta.jack - mean(theta.jack))^2))
-print(se)
+myfunc(n = n, y = y, z = z)
 
 # 
+# 8.2 Refer to the law data (bootstrap). Use the jackknife-after-bootstrap
+# method to estimate the standard error of the bootstrap estimate of se(R).
+data(law,package = 'bootstrap')
+names(law)
+myfunc(n = n, y = law$LSAT, z = law$GPA)
+
 # 8.3 Obtain a bootstrap t confidence interval estimate for the correlation
 # statistic in Example 8.2 (law data in bootstrap).
-
+rm(list = ls())
 boot.t.ci <-
   function(x, B = 500, R = 100, level = .95, statistic){
     #compute the bootstrap t CI
     x <- as.matrix(x); n <- nrow(x)
     stat <- numeric(B); se <- numeric(B)
+    
     boot.se <- function(x, R, f) {
       #local function to compute the bootstrap
       #estimate of standard error for statistic f(x)
@@ -767,40 +772,219 @@ boot.t.ci <-
     CI <- rev(stat0 - Qt * se0)
   }
 
-dat <- cbind(law$LSAT, law$GPA)
+data(law,package = 'bootstrap')
+dat <- cbind(law$LSAT,law$GPA)
 stat <- function(dat) {
   cor(dat[, 1],dat[, 2]) }
 ci <- boot.t.ci(dat, statistic = stat, B=2000, R=200)
 print(ci)
 
-# 8.4 Refer to the air-conditioning data set aircondit provided in the boot package. 
-# The 12 observations are the times in hours between failures of
+
+# 8.4 Refer to the air-conditioning data set aircondit provided in the boot package. The 12 observations are the times in hours between failures of
 # air-conditioning equipment [68, Example 1.1]:
 #   3, 5, 7, 18, 43, 85, 91, 98, 100, 130, 230, 487.
-# Assume that the times between failures follow an exponential model Exp(λ). Obtain the MLE of the hazard rate λ 
-# and use bootstrap to estimate the bias 
-# and standard error of the estimate.
+# Assume that the times between failures follow an exponential model
+# Exp(λ). Obtain the MLE of the hazard rate λ and use bootstrap to
+# estimate the bias and standard error of the estimate.
+rm(list = ls())
+data(aircondit,package = 'boot')
 time <- c(3, 5, 7, 18, 43, 85, 91, 98, 100, 130, 230, 487)
-theta.hat <- 1/mean(time)
+lambda <- 12/mean(time)
 
-#bootstrap estimate of bias
-B <- 2000 #larger for estimating bias
-n <- length(time)
-theta.b <- numeric(B)
+#set up the bootstrap
+B <- 200 #number of replicates
+n <- length(time) #sample size
+R <- numeric(B) #storage for replicates
+#bootstrap estimate of standard error of R
 for (b in 1:B) {
+  #randomly select the indices
   i <- sample(1:n, size = n, replace = TRUE)
-  LSAT <- time[i]
-  theta.b[b] <- 1/mean(LSAT)
+  lambda <- time[i] #i is a vector of indices
+  R[b] <- 12/mean(lambda)
 }
-bias <- mean(theta.b - theta.hat)
-bias
+#output
+print(se.R <- sd(R))
+hist(R, prob = TRUE)
 
-se.r <- sd(theta.b)
-se.r
+
+
+rm(list = ls())
+data(aircondit,package = 'boot')
+time <- c(3, 5, 7, 18, 43, 85, 91, 98, 100, 130, 230, 487)
+inv_lambda <- mean(time)/12
+
 # 8.5 Refer to Exercise 8.4. Compute 95% bootstrap confidence intervals for
-# the mean time between failures 1/λ by the standard normal, basic,
-# percentile, and BCa methods. Compare the intervals and explain why
-# they may differ.
+# the mean time between failures 1/λ by the standard normal, basic, percentile, and BCa methods. 
+# Compare the intervals and explain why they may differ.
+rm(list = ls())
+data(aircondit,package = 'boot')
+# type:c("norm","basic", "stud", "perc", "bca")
+boot.out <- boot(aircondit,R = 2000,statistic = function(x,i) mean(x[i,1]))
+library(boot)
+boot.ci(boot.out, conf = 0.95, 
+        type = c("norm","basic", "stud", "perc", "bca"))
 
 
+# 8.6 Efron and Tibshirani discuss the scor (bootstrap) test score data
+# on 88 students who took examinations in five subjects [91, Table 7.1],
+# [194, Table 1.2.1]. The first two tests (mechanics, vectors) were closed
+# book and the last three tests (algebra, analysis, statistics) were open
+# book. Each row of the data frame is a set of scores (xi1, . . . , xi5) for
+# the ith student. Use a panel display to display the scatter plots for each pair of test scores. 
+# Compare the plot with the sample correlation matrix. 
+# Obtain bootstrap estimates of the standard errors for each of the following estimates: 
+#   ρˆ12 = ˆρ(mec, vec), ρˆ34 = ˆρ(alg, ana), ρˆ35 = ˆρ(alg,sta), ρˆ45 = ˆρ(ana, sta).
+
+library(bootstrap)
+data(scor)
+
+car::scatterplotMatrix(scor)
+cor(scor)
+
+#set up the bootstrap
+B <- 200 #number of replicates
+n <- nrow(scor) #sample size
+R12 <- R34 <- R35 <- R45 <- numeric(B) #storage for replicates
+
+#bootstrap estimate of standard error of R
+for (b in 1:B) {
+  #randomly select the indices
+  i <- sample(1:n, size = n, replace = TRUE)
+  mec <- scor$mec[i]
+  vec <- scor$vec[i]
+  alg <- scor$alg[i]
+  ana <- scor$ana[i]
+  sta  <- scor$sta[i]
+  
+  R12[b] <- cor(mec,vec)
+  R34[b] <- cor(alg,ana)
+  R35[b] <- cor(alg,sta)
+  R45[b] <- cor(ana,sta)
+}
+sd(R12);sd(R34);sd(R35);sd(R45)
+
+
+# 8.7 Refer to Exercise 8.6. Efron and Tibshirani discuss the following example [91, Chapter 7]. The five-dimensional scores data have a 5 × 5
+# covariance matrix Σ, with positive eigenvalues λ1 > · · · > λ5. In principal components analysis,
+# measures the proportion of variance explained by the first principal
+# component. Let ˆλ1 > · · · > ˆλ5 be the eigenvalues of ˆΣ, where ˆΣ is the
+# MLE of Σ. Compute the sample estimate of θ. 
+# Use bootstrap to estimate the bias and standard error of θˆ.
+#set up the bootstrap
+B <- 200 #number of replicates
+n <- nrow(scor) #sample size
+eg <- eigen(cov(scor))$values
+theta_hat <- max(eg)/sum(eg)
+theta_b <- numeric(B) #storage for replicates
+#bootstrap estimate of standard error of R
+for (b in 1:B) {
+  #randomly select the indices
+  i <- sample(1:n, size = n, replace = TRUE)
+  eg <- eigen(cov(scor[i,]))$values
+  theta_b[b] <- max(eg)/sum(eg)
+}
+
+(bias <- mean(theta_b) - theta_hat)
+(se <- sd(theta_b))
+
+
+
+# 8.8 Refer to Exercise 8.7. Obtain the jackknife estimates of bias and standard error of θ
+
+B <- 200 #number of replicates
+n <- nrow(scor) #sample size
+eg <- eigen(cov(scor))$values
+theta_hat <- max(eg)/sum(eg)
+theta_jack <- numeric(B) #storage for replicates
+#bootstrap estimate of standard error of R
+for (b in 1:B) {
+  eg <- eigen(cov(scor[-b,]))$values
+  theta_jack[b] <- max(eg)/sum(eg)
+}
+
+(bias <- (n-1)*(mean(theta_jack) - theta_hat))
+
+(se <- sqrt((n-1)*mean((theta_jack - mean(theta_jack))^2)))
+
+
+# 8.9 Refer to Exercise 8.7. Compute 95% percentile and BCa confidence
+# intervals for θˆ.
+theta.boot <- function(dat,ind){
+  eg <- eigen(cov(dat[ind,]))$values
+  theta_hat <- max(eg)/sum(eg)
+}
+dat <- scor
+boot.out <- boot(dat,statistic = theta.boot,R = 2000)
+library(boot)
+boot.ci(boot.out, type = c("perc", "bca"))
+
+# 8.10 In Example 8.17, leave-one-out (n-fold) cross validation was used to
+# select the best fitting model. Repeat the analysis replacing the Log-Log model with a cubic polynomial model. Which of the four models
+# is selected by the cross validation procedure? Which model is selected
+# according to maximum adjusted R2 ?
+
+data(ironslag,package = 'DAAG')
+names(ironslag)
+chemical <- ironslag$chemical
+magnetic <- ironslag$magnetic
+
+n <- length(magnetic) #in DAAG ironslag
+e1 <- e2 <- e3 <- e4 <- numeric(n)
+# for n-fold cross validation
+# fit models on leave-one-out samples
+for (k in 1:n) {
+  y <- magnetic[-k]
+  x <- chemical[-k]
+  J1 <- lm(y ~ x)
+  e1[k] <- summary(J1)$adj.r.squared
+  J2 <- lm(y ~ x + I(x^2))
+  e2[k] <- summary(J2)$adj.r.squared
+  J3 <- lm(log(y) ~ x)
+  e3[k] <- summary(J3)$adj.r.squared
+  J4 <- lm(y ~ x + I(x^2) + I(x^3))
+  e4[k] <- summary(J4)$adj.r.squared
+}
+c(mean(e1), mean(e2), mean(e3), mean(e4))
+
+# 8.11 In Example 8.17, leave-one-out (n-fold) cross validation was used to select the best fitting model. 
+# Use leave-two-out cross validation to compare the models.
+
+
+data(ironslag,package = 'DAAG')
+names(ironslag)
+chemical <- ironslag$chemical
+magnetic <- ironslag$magnetic
+# 集合运算的一般规则如下：
+# union(x,y)    #求并集
+# intersect(x,y)    #求交集
+# setdiff(x,y)    #求属于x而不属于y的所有元素
+# setequal(x,y)    #判断x与y是否相等
+# a %in% y    #判断a是否为y中的元素
+# choose(n, k)    #n个里面取k个的组合数
+# combn(x,n)    #x中的元素每次取n个的所有组合
+# combn(x,n,f)     #将这些组合用于指定函数f
+
+n <- 200
+adjr1 <- combn(n, 2, function(k) summary(lm(magnetic[-k] ~  chemical[-k]))$adj.r.squared) 
+adjr2 <- combn(n, 2, function(k) summary(lm(magnetic[-k] ~  chemical[-k] + I(chemical[-k]^2)))$adj.r.squared) 
+adjr3 <- combn(n, 2, function(k) summary(lm(log(magnetic[-k]) ~  chemical[-k]))$adj.r.squared) 
+adjr4 <- combn(n, 2, function(k) summary(lm(log(magnetic[-k]) ~  log(chemical[-k])))$adj.r.squared) 
+
+c(mean(adjr1),mean(adjr2),mean(adjr3),mean(adjr4))
+
+# 8.A Conduct a Monte Carlo study to estimate the coverage probabilities of
+# the standard normal bootstrap confidence interval, the basic bootstrap
+# confidence interval, and the percentile confidence interval. Sample from
+# a normal population and check the empirical coverage rates for the
+# sample mean. Find the proportion of times that the confidence intervals
+# miss on the left, and the porportion of times that the confidence intervals
+# miss on the right.
+# 8.B Repeat Project A for the sample skewness statistic. 
+# Compare the coverage rates for normal populations (skewness 0) and χ2 (5) distributions (positive skewness).
+
+library(boot)
+data(law, package = "bootstrap")
+boot.obj <- boot(law, R = 2000,
+                 statistic = function(x, i){cor(x[i,1], x[i,2])})
+print(boot.ci(boot.obj, type=c("basic","norm","perc")))
 
