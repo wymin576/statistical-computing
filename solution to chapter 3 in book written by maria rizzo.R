@@ -2183,5 +2183,223 @@ jack.after.boot(boot.out, useJ=TRUE, stinf=T)
 # Repeat this for the slopes by setting index = 2. Do you find the same points influential in both plots?
 
 
+# 10.1 Refer to Example 10.1 and Figure 10.1. Suppose that we want to test
+# H0 : F = G, where F is the distribution of weight for the casein
+# feed group and G is the distribution of weight for the sunflower feed
+# group of the chickwts data. A test can be based on the two-sample
+# Kolmogorov-Smirnov statistic as shown in Example 10.1. Display a histogram of the permutation replicates of the Kolmogorov-Smirnov twosample test statistic for this test. Is the test significant at α = 0.10?
+
+attach(chickwts)
+x <- sort(weight[feed == "casein"])
+y <- sort(weight[feed == "sunflower"])
+detach(chickwts)
+
+R <- 999 #number of replicates
+z <- c(x, y) #pooled sample
+K <- 1:length(z)
+D <- numeric(R) #storage for replicates
+options(warn = -1)
+D0 <- ks.test(x, y, exact = FALSE)$statistic
+for (i in 1:R) {
+  #generate indices k for the first sample
+  k <- sample(K, size = 14, replace = FALSE)
+  x1 <- z[k]
+  y1 <- z[-k] #complement of x1
+  D[i] <- ks.test(x1, y1, exact = FALSE)$statistic
+}
+p <- mean(c(D0, D) >= D0)
+options(warn = 0)
+p
+
+# 10.2 Write a function to compute the two-sample Cramér–von Mises statistic
+
+CVM <- function(x,y){
+R <- 999 #number of replicates
+z <- c(x, y) #pooled sample
+K <- 1:length(z)
+D <- numeric(R) #storage for replicates
+options(warn = -1)
+D0 <- twosamples::cvm_test(x, y)[1]
+for (i in 1:R) {
+  #generate indices k for the first sample
+  k <- sample(K, size = 14, replace = FALSE)
+  x1 <- z[k]
+  y1 <- z[-k] #complement of x1
+  D[i] <- twosamples::cvm_test(x1, y1)[1]
+}
+p <- mean(c(D0, D) >= D0)  
+return(p)
+}
+
+
+
+# 10.3 Implement the two-sample Cramér-von Mises test for equal distributions as a permutation test using (10.14). Apply the test to the data in
+# Examples 10.1 and 10.2.
+attach(chickwts)
+x <- sort(weight[feed == "casein"])
+y <- sort(weight[feed == "sunflower"])
+detach(chickwts)
+CVM(x,y)
+
+              
+# exercise 10.4
+rm(list =ls())
+
+NN.idx <- function(x, tree.type="kd", k=NROW(x)) {
+  x <- as.matrix(x)
+  k <- min(c(k+1, NROW(x)))
+  NN <- yaImpute::ann(ref=x, target=x,
+                      tree.type="kd", k=k, verbose=FALSE)
+  idx <- NN$knnIndexDist[,1:k]
+  nn.idx <- idx[,-1] #first NN is in column 2
+  row.names(nn.idx) <- idx[,1]
+  nn.idx
+}
+
+## function to compute the NN statistic T(n,3)
+Tnr <- function(z, ix=1:NROW(z), sizes,r =3) {
+  z <- as.matrix(z)
+  n1 <- sizes[1]
+  n2 <- sizes[2]
+  n <- n1 + n2
+  z <- as.matrix(z[ix, ])
+  nn.idx <- NN.idx(z, k=r)
+  block1 <- nn.idx[1:n1, ]
+  block2 <- nn.idx[(n1+1):n, ]
+  i1 <- sum(block1 < n1 + .5)
+  i2 <- sum(block2 > n1 + .5)
+  return((i1 + i2) / (r * n))
+}
+# exercise 10.5
+rm(list =ls());set.seed(123)
+NN.idx <- function(x, tree.type="kd", k=NROW(x)) {
+  x <- as.matrix(x)
+  k <- min(c(k+1, NROW(x)))
+  NN <- yaImpute::ann(ref=x, target=x,
+                      tree.type="kd", k=k, verbose=FALSE)
+  idx <- NN$knnIndexDist[,1:k]
+  nn.idx <- idx[,-1] #first NN is in column 2
+  row.names(nn.idx) <- idx[,1]
+  nn.idx
+}
+
+## function to compute the NN statistic T(n,3)
+Tnr <- function(z, ix=1:NROW(z), sizes,r= 2) {
+  z <- as.matrix(z)
+  n1 <- sizes[1]
+  n2 <- sizes[2]
+  n <- n1 + n2
+  z <- as.matrix(z[ix, ])
+  nn.idx <- NN.idx(z, k=r)
+  block1 <- nn.idx[1:n1, ]
+  block2 <- nn.idx[(n1+1):n, ]
+  i1 <- sum(block1 < n1 + .5)
+  i2 <- sum(block2 > n1 + .5)
+  return((i1 + i2) / (r * n))
+}
+
+
+attach(iris)
+x <- as.matrix(iris[Species == "setosa",-5])
+y <- as.matrix(iris[Species == "virginica",-5])
+z <- c(x, y)
+detach(iris)
+N <- c(NROW(x), NROW(y))
+boot.obj <- boot::boot(data = z, statistic = Tnr,
+                       sim = "permutation", R = 999, sizes = N)
+boot.obj
+tb <- c(boot.obj$t, boot.obj$t0)
+mean(tb >= boot.obj$t0)
+
+
+# exercise 10.6
+# 10.6
+rm(list = ls())
+x <- runif(100,-1,1)
+y <- x^2
+ 
+cor.test(x, y, method=c('pearson'))
+cor.test(x, y, method=c('kendall'))
+cor.test(x, y, method=c('spearman'))
+
+dCov <- function(x, y) {
+  x <- as.matrix(x)
+  y <- as.matrix(y)
+  n <- nrow(x)
+  m <- nrow(y)
+  if (n != m || n < 2) stop("Sample sizes must agree")
+  if (! (all(is.finite(c(x, y)))))
+    stop("Data contains missing or infinite values")
+  Akl <- function(x) {
+    d <- as.matrix(dist(x))
+    m <- rowMeans(d)
+    M <- mean(d)
+    a <- sweep(d, 1, m)
+    b <- sweep(a, 2, m)
+    return(b + M)
+  }
+  A <- Akl(x)
+  B <- Akl(y)
+  dCov <- sqrt(mean(A * B))
+  dCov
+}
+
+
+ndCov2 <- function(z, ix, dims) {
+  #dims contains dimensions of x and y
+  p <- dims[1]
+  q1 <- p + 1
+  d <- p + dims[2]
+  x <- z[ , 1] #leave x as is
+  y <- z[ix, 2] #permute rows of y
+  return(nrow(z) * dCov(x, y)^2)
+}
+
+z <- cbind(x,y)
+boot.obj <- boot::boot(data = z, statistic = ndCov2, R = 999,
+                       sim = "permutation", dims = dim(z))
+tb <- c(boot.obj$t0, boot.obj$t)
+mean(tb >= boot.obj$t0)
+
+# exercise 10.7
+
+rm(list =ls())
+count5test <- function(x, y) {
+  X <- x - mean(x)
+  Y <- y - mean(y)
+  outx <- sum(X > max(Y)) + sum(X < min(Y))
+  outy <- sum(Y > max(X)) + sum(Y < min(X))
+  # return 1 (reject) or 0 (do not reject H0)
+  return(as.integer(max(c(outx, outy)) > 5))
+}
+
+
+n1 <- 20; n2 <- 30
+mu1 <- mu2 <- 0
+sigma1 <- sigma2 <- 1
+R <- 999
+# 生成两个样本数据
+x <- rnorm(n1,mean = mu1,sd = sigma1)
+y <- rnorm(n2,mean  = mu1,sd = sigma2)
+
+z <- c(x, y) #pooled sample
+K <- 1:length(z)
+D <- numeric(R) #storage for replicates
+options(warn = -1)
+
+D0 <- count5test(x, y)
+for (i in 1:R) {
+  #generate indices k for the first sample
+  k <- sample(K, size = 14, replace = FALSE)
+  x1 <- z[k]
+  y1 <- z[-k] #complement of x1
+  D[i] <- count5test(x1, y1)
+}
+p <- mean(c(D0, D) >= D0)
+p
+               
+               
+
+
                
 
