@@ -2400,6 +2400,124 @@ p
                
                
 
+# 10.3
+rm(list = ls())
+set.seed(123)
+
+f <- function(x) {
+  return(1/(pi*(1+x^2)))
+}
+
+m <- 10000
+x <- numeric(m)
+x[1] <- rnorm(1)
+k <- 0
+u <- runif(m)
+
+for (i in 2:m) {
+  xt <- x[i-1]
+  y <- rnorm(1, mean = xt)
+  num <- f(y) * dnorm(xt,mean = y)
+  den <- f(xt) * dnorm(y, mean = xt)
+  if (u[i] <= num/den) x[i] <- y else {
+    x[i] <- xt
+    k <- k+1 #y is rejected
+  }
+}
+ print(k)
+
+quantile(x,probs = (1:9)/10)
+qcauchy((1:9)/10)
+
+
+
+# 10.6
+
+rm(list = ls())
+set.seed(123)
+library(VGAM)
+
+
+
+rw.Metropolis <- function(n, sigma, x0, N) {
+  x <- numeric(N)
+  x[1] <- x0
+  u <- runif(N)
+  k <- 0
+  for (i in 2:N) {
+    y <- rnorm(1, x[i-1], sigma)
+    if (u[i] <= (dlaplace(y) / dlaplace(x[i-1])))
+      x[i] <- y else {
+        x[i] <- x[i-1]
+        k <- k + 1
+      }
+  }
+  return(list(x=x, k=k))
+}
+
+n <- 4 #degrees of freedom for target Student t dist.
+N <- 2000
+sigma <- 1:4
+x0 <- 25
+rw1 <- rw.Metropolis(n, sigma[1], x0, N)
+rw2 <- rw.Metropolis(n, sigma[2], x0, N)
+rw3 <- rw.Metropolis(n, sigma[3], x0, N)
+rw4 <- rw.Metropolis(n, sigma[4], x0, N)
+
+c(rw1$k, rw2$k, rw3$k, rw4$k)
+ 
+
+
+# 10.9 Implement a Gibbs sampler to generate a bivariate normal chain (Xt, Yt)
+# with zero means, unit standard deviations, and correlation 0.9. Plot
+# the generated sample after discarding a suitable burn-in sample. 
+#initialize constants and parameters
+N <- 5000 #length of chain
+burn <- 1000 #burn-in length
+X <- matrix(0, N, 2) #the chain, a bivariate sample
+rho <- .9 #correlation
+mu1 <- mu2 <-0
+sigma1 <- sigma2 <-1
+s1 <- sqrt(1-rho^2)*sigma1
+s2 <- sqrt(1-rho^2)*sigma2
+###### generate the chain #####
+X[1, ] <- c(mu1, mu2) #initialize
+
+for (i in 2:N) {
+  x2 <- X[i-1, 2]
+  m1 <- mu1 + rho * (x2 - mu2) * sigma1/sigma2
+  X[i, 1] <- rnorm(1, m1, s1)
+  x1 <- X[i, 1]
+  m2 <- mu2 + rho * (x1 - mu1) * sigma2/sigma1
+  X[i, 2] <- rnorm(1, m2, s2)
+}
+b <- burn + 1
+x <- X[b:N, ]
+
+plot(x, main="", cex=.5, xlab=bquote(X[1]),
+     ylab=bquote(X[2]), ylim=range(x[,2]))
+
+# 10.11
+rm(list = ls())
+N <- 5000 #length of chain
+burn <- 1000 #burn-in length
+X <- matrix(0, N, 2) #the chain, a bivariate sample
+
+###### generate the chain #####
+X[1, ] <- c(10, 0.5) #initialize
+n <- 100;a <- b <- 2
+
+for (i in 2:N) {
+  x2 <- X[i-1, 2]
+  X[i, 1] <- rbinom(1, n, x2)
+  x1 <- X[i, 1]
+  X[i, 2] <- rbeta(1, x1 + a,n - x1 + b)
+}
+b <- burn + 1
+x <- X[b:N, ]
+
+summary(x)
+
 
                
 
